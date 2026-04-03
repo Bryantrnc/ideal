@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --dark-chocolate: #2c0901;
+  --brown-derby: #4e1e15;
+  --coffee-bean: #21150c;
+  --teak: #b48e69;
+
+  --cream: #fff4e8;
+  --almond: #f0e0c7;
+  --satin-linen: #eae6db;
+
+  --text-dark: #2c0901;
+  --text-soft: #7f6554;
+  --text-light: #fff4e8;
+
+  --border-light: #dccbb8;
+  --border-dark: #5a2b20;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(circle at top left, rgba(180, 142, 105, 0.12), transparent 25%),
+    linear-gradient(180deg, #f7ede0 0%, #f2e7d8 100%);
+  color: var(--text-dark);
+  font-family: var(--font-manrope), Arial, Helvetica, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+}
+
+input,
+select,
+button {
+  font: inherit;
+}
+
+.hero-title {
+  font-family: var(--font-cormorant), serif;
+}
+
+.glass-text {
+  color: rgba(255, 244, 232, 0.92);
+  text-shadow:
+    0 6px 22px rgba(0, 0, 0, 0.28),
+    0 0 28px rgba(255, 244, 232, 0.08);
+}
+
+.hero-subtext {
+  color: rgba(255, 244, 232, 0.76);
+  text-shadow: 0 4px 18px rgba(0, 0, 0, 0.22);
+}
+
+.glow-button {
+  transition:
+    transform 0.28s ease,
+    box-shadow 0.28s ease,
+    background-color 0.28s ease,
+    color 0.28s ease;
+}
+
+.glow-button:hover {
+  transform: translateY(-2px);
+}
+
+.glow-gold:hover {
+  box-shadow:
+    0 0 0 1px rgba(180, 142, 105, 0.35),
+    0 0 26px rgba(180, 142, 105, 0.35),
+    0 12px 28px rgba(44, 9, 1, 0.2);
+}
+
+.glow-dark:hover {
+  box-shadow:
+    0 0 0 1px rgba(78, 30, 21, 0.22),
+    0 0 22px rgba(78, 30, 21, 0.18),
+    0 10px 24px rgba(44, 9, 1, 0.16);
+}
+
+.soft-card {
+  box-shadow:
+    0 10px 30px rgba(44, 9, 1, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
