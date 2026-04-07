@@ -1,44 +1,63 @@
-import Image from "next/image";
+import { Barlow_Condensed, Inter } from "next/font/google";
+
+const heroTitleFont = Barlow_Condensed({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"]
+});
+
+const heroBodyFont = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500"]
+});
 
 export function HeroSection() {
   return (
-    <section className="relative overflow-hidden rounded-[38px] border border-[#5a2b20]/30 shadow-[0_25px_70px_rgba(44,9,1,0.28)]">
+    <section className="relative w-full overflow-hidden bg-black">
       <div
-        className="relative min-h-[560px] bg-cover bg-center bg-no-repeat md:min-h-[660px]"
-        style={{ backgroundImage: "url('/hero-jogging.png')" }}
+        className="relative min-h-screen w-full bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage:
+            "linear-gradient(90deg, rgba(0,0,0,0.84) 0%, rgba(0,0,0,0.62) 32%, rgba(0,0,0,0.34) 62%, rgba(0,0,0,0.46) 100%), url('/hero-jogging.png')"
+        }}
       >
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(44,9,1,0.80)_0%,rgba(44,9,1,0.62)_36%,rgba(44,9,1,0.30)_68%,rgba(44,9,1,0.16)_100%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_left_center,rgba(255,244,232,0.16)_0%,rgba(255,244,232,0.06)_18%,transparent_42%)]" />
-        <div className="absolute left-0 top-0 h-full w-[52%] backdrop-blur-[3px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_left,rgba(232,80,2,0.14),transparent_34%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black via-black/65 to-transparent" />
 
-        <div className="relative z-10 flex min-h-[560px] items-start md:min-h-[660px]">
-          <div className="w-full max-w-[760px] px-8 py-8 md:px-14 md:py-10">
-            <a href="#analysis-section" className="flex items-start">
-  <Image
-    src="/logo.png"
-    alt="Ideals Logo"
-    width={168}
-    height={54}
-    priority
-    className="h-auto w-auto object-contain"
-  />
-</a>
+        <div className="relative z-10 flex min-h-screen items-start">
+          <div className="mx-auto w-full max-w-7xl px-5 pt-12 pb-10 md:px-8 md:pt-14 md:pb-14 xl:px-10">
+            <div className="max-w-[760px] space-y-4 md:space-y-5">
+              <div className="flex items-center pl-1">
+                <img
+                  src="/logo.png"
+                  alt="Ideal logo"
+                  className="h-24 w-auto object-contain md:h-32 xl:h-40"
+                />
+              </div>
 
-            <h1 className="hero-title glass-text mt-2 max-w-[700px] text-[52px] font-semibold leading-[0.92] tracking-[-0.04em] md:text-[84px]">
-              Discover the Best Version of Yourself with Ideal
-            </h1>
+              <div className="space-y-3">
+                <h1
+                  className={`${heroTitleFont.className} max-w-[700px] pl-1 text-[52px] font-semibold uppercase leading-[0.9] tracking-[-0.03em] text-white md:text-[72px] xl:text-[84px]`}
+                >
+                  Discover the Best
+                  <br />
+                  Version of Yourself
+                  <br />
+                  with Ideal
+                </h1>
 
-            <p className="hero-subtext mt-4 max-w-[620px] text-[16px] leading-8 md:text-[18px]">
-              Kickstart your transformation with customized diet and bulking plans designed for your body goals.
-            </p>
+                <p className="max-w-[520px] pl-1 text-[16px] font-medium leading-8 text-white/72 md:text-[18px] md:leading-8">
+  Stop dreaming, start doing. Get your personalized plan today.
+</p>
+              </div>
 
-            <div className="mt-8">
-              <a
-                href="#analysis-section"
-                className="glow-button glow-dark inline-flex items-center justify-center rounded-full bg-[#4E1E15] px-7 py-3 font-semibold text-[#FFF4E8] hover:bg-[#5f271b]"
-              >
-                Get Started
-              </a>
+              <div className="pt-2 pl-1">
+                <a
+                  href="#analysis-form"
+                  className="inline-flex items-center justify-center rounded-full bg-[#E85002] px-8 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(232,80,2,0.24)] transition hover:bg-[#F16001] md:px-10 md:text-lg"
+                >
+                  Get Started
+                </a>
+              </div>
             </div>
           </div>
         </div>

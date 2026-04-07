@@ -1,34 +1,25 @@
-import "./globals.css";
 import type { Metadata } from "next";
-import { Manrope, Cormorant_Garamond } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
+import "./globals.css";
 
-const manrope = Manrope({
+const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-manrope",
-});
-
-const cormorant = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  variable: "--font-cormorant",
+  variable: "--font-jakarta"
 });
 
 export const metadata: Metadata = {
   title: "Ideals",
-  description: "Periksa seberapa ideal badan kalian di Ideal",
+  description: "Personalized body analysis and program planning."
 };
 
 export default function RootLayout({
-  children,
+  children
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id">
-      <body className={`${manrope.variable} ${cormorant.variable}`}>
-        {children}
-      </body>
+    <html lang="en">
+      <body className={jakarta.variable}>{children}</body>
     </html>
   );
 }

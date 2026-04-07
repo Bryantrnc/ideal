@@ -1,350 +1,365 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 
 type Goal = "none" | "diet" | "bulking";
 type Gender = "male" | "female";
 type ActivityLevel = "low" | "moderate" | "high";
 
-type ResultState = {
-  bmi: string;
-  bmiCategory: string;
-  idealMin: string;
-  idealMax: string;
-  calories: number;
-  programTitle: string;
+type FormState = {
+  heightCm: string;
+  weightKg: string;
+  age: string;
+  gender: Gender;
+  activityLevel: ActivityLevel;
+  goal: Goal;
 };
 
+type SubmittedState = {
+  heightCm: number;
+  weightKg: number;
+  age: number;
+  gender: Gender;
+  activityLevel: ActivityLevel;
+  goal: Goal;
+};
+
+function calculateResult(data: SubmittedState) {
+  const h = data.heightCm / 100;
+  const w = data.weightKg;
+  const bmi = w / (h * h || 1);
+  const min = 18.5 * h * h;
+  const max = 24.9 * h * h;
+
+  const bmr =
+    data.gender === "male"
+      ? 10 * w + 6.25 * data.heightCm - 5 * data.age + 5
+      : 10 * w + 6.25 * data.heightCm - 5 * data.age - 161;
+
+  const activityMultiplier =
+    data.activityLevel === "high"
+      ? 1.725
+      : data.activityLevel === "moderate"
+        ? 1.55
+        : 1.2;
+
+  const maintenanceCalories = bmr * activityMultiplier;
+
+  const calories =
+    data.goal === "diet"
+      ? Math.round(maintenanceCalories - 400)
+      : data.goal === "bulking"
+        ? Math.round(maintenanceCalories + 300)
+        : Math.round(maintenanceCalories);
+
+  const category =
+    bmi < 18.5
+      ? "Underweight"
+      : bmi < 25
+        ? "Normal"
+        : bmi < 30
+          ? "Overweight"
+          : "Obese";
+
+  return {
+    bmi: bmi.toFixed(1),
+    min: min.toFixed(1),
+    max: max.toFixed(1),
+    calories,
+    category
+  };
+}
+
 export function AnalysisForm() {
-  const router = useRouter();
+  const [form, setForm] = useState<FormState>({
+    heightCm: "170",
+    weightKg: "65",
+    age: "24",
+    gender: "male",
+    activityLevel: "moderate",
+    goal: "none"
+  });
 
-  const [heightCm, setHeightCm] = useState("170");
-  const [weightKg, setWeightKg] = useState("65");
-  const [age, setAge] = useState("24");
-  const [gender, setGender] = useState<Gender>("male");
-  const [activityLevel, setActivityLevel] = useState<ActivityLevel>("moderate");
-  const [goal, setGoal] = useState<Goal>("none");
-
+  const [submitted, setSubmitted] = useState<SubmittedState | null>(null);
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [hasGenerated, setHasGenerated] = useState(false);
 
-  const result = useMemo<ResultState>(() => {
-    const hCm = Number(heightCm);
-    const h = hCm / 100;
-    const w = Number(weightKg);
-    const userAge = Number(age);
+  const result = useMemo(() => {
+    if (!submitted) return null;
+    return calculateResult(submitted);
+  }, [submitted]);
 
-    if (!hCm || !w || !userAge || h <= 0 || w <= 0 || userAge <= 0) {
-      return {
-        bmi: "0.0",
-        bmiCategory: "-",
-        idealMin: "0.0",
-        idealMax: "0.0",
-        calories: 0,
-        programTitle: "Program",
-      };
+  function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function handleGenerate() {
+    const heightCm = Number(form.heightCm);
+    const weightKg = Number(form.weightKg);
+    const age = Number(form.age);
+
+    if (!heightCm || !weightKg || !age) {
+      setError("Semua data wajib diisi terlebih dahulu.");
+      return;
     }
 
-    const bmi = w / (h * h);
-    const idealMin = 18.5 * h * h;
-    const idealMax = 24.9 * h * h;
-
-    const bmr =
-      gender === "male"
-        ? 10 * w + 6.25 * hCm - 5 * userAge + 5
-        : 10 * w + 6.25 * hCm - 5 * userAge - 161;
-
-    const activityMultiplier =
-      activityLevel === "high" ? 1.725 : activityLevel === "moderate" ? 1.55 : 1.2;
-
-    const baseCalories = bmr * activityMultiplier;
-    const calories = Math.round(
-      baseCalories + (goal === "diet" ? -400 : goal === "bulking" ? 300 : 0)
-    );
-
-    let bmiCategory = "Normal";
-    if (bmi < 18.5) bmiCategory = "Underweight";
-    else if (bmi >= 25 && bmi < 30) bmiCategory = "Overweight";
-    else if (bmi >= 30) bmiCategory = "Obesitas";
-
-    let programTitle = "Program";
-    if (goal === "diet") programTitle = "Program Diet";
-    if (goal === "bulking") programTitle = "Program Bulking";
-
-    return {
-      bmi: bmi.toFixed(1),
-      bmiCategory,
-      idealMin: idealMin.toFixed(1),
-      idealMax: idealMax.toFixed(1),
-      calories,
-      programTitle,
-    };
-  }, [heightCm, weightKg, age, gender, activityLevel, goal]);
-
-  const handleGenerate = async () => {
-    const h = Number(heightCm);
-    const w = Number(weightKg);
-    const userAge = Number(age);
-
-    if (!h || !w || !userAge || h <= 0 || w <= 0 || userAge <= 0) {
-      setError("Mohon isi data dengan benar.");
-      setHasGenerated(false);
+    if (heightCm <= 0 || weightKg <= 0 || age <= 0) {
+      setError("Masukkan data yang valid untuk tinggi, berat, dan usia.");
       return;
     }
 
     setError("");
-    setIsLoading(true);
-    setHasGenerated(false);
-
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-
-    setIsLoading(false);
-    setHasGenerated(true);
-  };
-
-  const goToProgramPage = () => {
-    const params = new URLSearchParams({
+    setSubmitted({
       heightCm,
       weightKg,
       age,
-      gender,
-      activityLevel,
-      goal,
+      gender: form.gender,
+      activityLevel: form.activityLevel,
+      goal: form.goal
     });
+  }
 
-    router.push(`/program/${goal}?${params.toString()}`);
-  };
+  const showProgramCard =
+    submitted !== null && result !== null && submitted.goal !== "none";
+
+  const inputClass =
+    "w-full rounded-[20px] border border-[#A7A7A7]/35 bg-[#F9F9F9] px-5 py-4 text-[17px] text-[#000000] shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] outline-none transition placeholder:text-[#646464] focus:border-[#E85002]/55 focus:ring-4 focus:ring-[#E85002]/10";
+
+  const softLightCard =
+    "rounded-[30px] border border-[#A7A7A7]/20 bg-gradient-to-br from-[#F9F9F9] via-[#F6F6F6] to-[#EFEFEF] p-6 text-black shadow-[0_24px_60px_rgba(0,0,0,0.18)]";
+
+  const darkPreviewCard =
+    "rounded-[30px] border border-white/10 bg-gradient-to-br from-[#0A0A0A] via-[#090909] to-[#151515] p-6 text-white shadow-[0_24px_60px_rgba(0,0,0,0.28)]";
 
   return (
     <section
-  id="analysis-section"
-  className="grid scroll-mt-8 gap-6 xl:grid-cols-[1.08fr_0.92fr]"
->
-      <div className="soft-card rounded-[30px] border border-[#DCCBB8] bg-[#FFF4E8] p-6 md:p-8">
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-3xl font-extrabold text-[#2C0901] md:text-4xl">
-              IDEAL ANALYSIS
-            </h2>
-            <p className="mt-3 max-w-2xl text-base leading-8 text-[#8A7464]">
-              Masukan Data Fisik Anda Untuk Di Analisis
-            </p>
+      id="analysis-form"
+      className="grid gap-6 lg:grid-cols-[1.08fr_0.92fr]"
+    >
+      <div className="relative overflow-hidden rounded-[36px] border border-[#A7A7A7]/20 bg-gradient-to-br from-[#F9F9F9] via-[#F6F6F6] to-[#F1F1F1] p-8 text-black shadow-[0_30px_90px_rgba(0,0,0,0.32)] md:p-10">
+        <div className="pointer-events-none absolute -left-20 -top-14 h-56 w-56 rounded-full bg-[#E85002]/10 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-0 right-0 h-44 w-44 rounded-full bg-[#C10801]/8 blur-3xl" />
+
+        <div className="relative space-y-8">
+          <div className="space-y-4">
+            <span className="inline-flex rounded-full border border-[#E85002]/20 bg-[#FFF3EC] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-[#E85002]">
+              Ideal Analysis
+            </span>
+
+            <div>
+              <h2 className="text-4xl font-bold tracking-tight text-[#000000] md:text-5xl">
+                Analisis Tubuh
+              </h2>
+              <p className="mt-3 max-w-xl text-sm leading-7 text-[#646464] md:text-base">
+                Masukkan data tubuhmu untuk melihat hasil BMI dan program yang
+                paling sesuai dengan tujuanmu.
+              </p>
+            </div>
           </div>
 
           <div className="grid gap-5 md:grid-cols-2">
-            <Field label="Tinggi Badan (cm)" value={heightCm} onChange={setHeightCm} />
-            <Field label="Berat Badan (kg)" value={weightKg} onChange={setWeightKg} />
-            <Field label="Usia" value={age} onChange={setAge} />
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-[#333333]">
+                Tinggi Badan (cm)
+              </label>
+              <input
+                type="number"
+                value={form.heightCm}
+                onChange={(e) => updateField("heightCm", e.target.value)}
+                placeholder="Contoh: 170"
+                className={inputClass}
+              />
+            </div>
 
-            <SelectField
-              label="Gender"
-              value={gender}
-              onChange={(value) => setGender(value as Gender)}
-              options={[
-                { label: "Pria", value: "male" },
-                { label: "Wanita", value: "female" },
-              ]}
-            />
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-[#333333]">
+                Berat Badan (kg)
+              </label>
+              <input
+                type="number"
+                value={form.weightKg}
+                onChange={(e) => updateField("weightKg", e.target.value)}
+                placeholder="Contoh: 65"
+                className={inputClass}
+              />
+            </div>
 
-            <SelectField
-              label="Aktivitas"
-              value={activityLevel}
-              onChange={(value) => setActivityLevel(value as ActivityLevel)}
-              options={[
-                { label: "Rendah", value: "low" },
-                { label: "Sedang", value: "moderate" },
-                { label: "Tinggi", value: "high" },
-              ]}
-            />
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-[#333333]">
+                Usia
+              </label>
+              <input
+                type="number"
+                value={form.age}
+                onChange={(e) => updateField("age", e.target.value)}
+                placeholder="Contoh: 24"
+                className={inputClass}
+              />
+            </div>
 
-            <div>
-              <label className="mb-2 block text-sm text-[#8A7464]">Program</label>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-[#333333]">
+                Gender
+              </label>
               <select
-                value={goal}
-                onChange={(e) => setGoal(e.target.value as Goal)}
-                className="w-full rounded-2xl border border-[#DCCBB8] bg-[#F0E0C7] px-5 py-4 text-lg text-[#2C0901] outline-none transition focus:border-[#4E1E15] focus:shadow-[0_0_0_4px_rgba(180,142,105,0.14)]"
+                value={form.gender}
+                onChange={(e) => updateField("gender", e.target.value as Gender)}
+                className={inputClass}
+              >
+                <option value="male">Pria</option>
+                <option value="female">Wanita</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-[#333333]">
+                Aktivitas
+              </label>
+              <select
+                value={form.activityLevel}
+                onChange={(e) =>
+                  updateField("activityLevel", e.target.value as ActivityLevel)
+                }
+                className={inputClass}
+              >
+                <option value="low">Rendah</option>
+                <option value="moderate">Sedang</option>
+                <option value="high">Tinggi</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-[#333333]">
+                Program
+              </label>
+              <select
+                value={form.goal}
+                onChange={(e) => updateField("goal", e.target.value as Goal)}
+                className={inputClass}
               >
                 <option value="none">None</option>
                 <option value="diet">Diet</option>
                 <option value="bulking">Bulking</option>
               </select>
-              <p className="mt-3 text-sm leading-6 text-[#8A7464]">Pilih sesuai tujuanmu.</p>
+              <p className="pt-2 text-sm text-[#646464]">
+                Pilih sesuai tujuanmu.
+              </p>
             </div>
           </div>
 
           {error && (
-            <div className="rounded-2xl border border-[#c78f78] bg-[#fff0ea] px-4 py-3 text-sm text-[#8a3d22]">
+            <div className="rounded-2xl border border-[#C10801]/20 bg-[#FFF1F0] px-4 py-3 text-sm text-[#C10801]">
               {error}
             </div>
           )}
 
-          <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center">
+          <div className="pt-2">
             <button
               type="button"
               onClick={handleGenerate}
-              disabled={isLoading}
-              className="glow-button glow-dark inline-flex min-w-[220px] items-center justify-center rounded-2xl bg-[#4E1E15] px-6 py-4 text-base font-bold text-[#FFF4E8] hover:bg-[#5f271b] disabled:cursor-not-allowed disabled:opacity-70"
+              className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#000000] via-[#C10801] to-[#F16001] px-8 py-4 text-base font-semibold text-white shadow-[0_22px_45px_rgba(232,80,2,0.24)] transition hover:scale-[1.01] hover:shadow-[0_24px_55px_rgba(232,80,2,0.30)]"
             >
-              {isLoading ? "Generating Insight..." : "Generate Insight"}
+              Generate Insight
             </button>
-
-            {isLoading && (
-              <div className="flex items-center gap-3 text-sm text-[#8A7464]">
-                <span className="h-3 w-3 animate-pulse rounded-full bg-[#B48E69]" />
-                Memproses hasil...
-              </div>
-            )}
           </div>
         </div>
       </div>
 
       <div className="grid gap-4">
-        {!hasGenerated ? (
-          <div className="soft-card rounded-[30px] border border-[#DCCBB8] bg-[#FFF4E8] p-6 md:p-8">
-            <p className="text-sm uppercase tracking-[0.2em] text-[#B48E69]">Hasil</p>
-            <h3 className="mt-4 text-2xl font-bold text-[#2C0901]">
-              Hasil analisis akan tampil di sini
-            </h3>
-            <p className="mt-3 max-w-xl leading-8 text-[#8A7464]">
-              Klik Generate Insight untuk melihat hasilnya.
-            </p>
-
-            <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              <SkeletonCard />
-              <SkeletonCard />
-              <SkeletonCard />
-              <SkeletonCard />
+        {!result ? (
+          <>
+            <div className={darkPreviewCard}>
+              <p className="text-sm font-medium text-[#A7A7A7]">Preview Hasil</p>
+              <h3 className="mt-4 text-3xl font-bold text-[#F9F9F9]">
+                Hasil akan muncul di sini
+              </h3>
+              <p className="mt-3 max-w-md text-sm leading-7 text-[#A7A7A7]">
+                Isi semua data, lalu klik <span className="text-white">Generate Insight</span> untuk melihat hasil analisis.
+              </p>
             </div>
-          </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="rounded-[28px] border border-white/10 bg-[#111111] p-6">
+                <p className="text-sm text-[#A7A7A7]">BMI</p>
+                <p className="mt-3 text-4xl font-bold text-white">--</p>
+              </div>
+
+              <div className="rounded-[28px] border border-white/10 bg-[#111111] p-6">
+                <p className="text-sm text-[#A7A7A7]">Kategori</p>
+                <p className="mt-3 text-4xl font-bold text-white">--</p>
+              </div>
+            </div>
+
+            <div className="rounded-[28px] border border-white/10 bg-[#111111] p-6">
+              <p className="text-sm text-[#A7A7A7]">Rentang Berat Ideal</p>
+              <p className="mt-3 text-4xl font-bold text-white">--</p>
+            </div>
+          </>
         ) : (
           <>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <ResultCard label="BMI" value={result.bmi} accent />
-              <ResultCard label="Kategori BMI" value={result.bmiCategory} />
-              <ResultCard
-                label="Rentang Berat Ideal"
-                value={`${result.idealMin} - ${result.idealMax} kg`}
-                className="sm:col-span-2"
-              />
-
+            <div className={softLightCard}>
+              <p className="text-sm font-medium text-[#646464]">BMI</p>
+              <p className="mt-3 text-5xl font-bold text-[#000000]">
+                {result.bmi}
+              </p>
             </div>
 
-            <div className="soft-card rounded-[30px] border border-[#DCCBB8] bg-[#FFF4E8] p-6 md:p-8">
-              <p className="text-sm uppercase tracking-[0.2em] text-[#B48E69]">
-                {result.programTitle}
-              </p>
-              <h3 className="mt-3 text-2xl font-bold text-[#2C0901]">Lanjut ke program</h3>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+              <div className={softLightCard}>
+                <p className="text-sm font-medium text-[#646464]">Kategori BMI</p>
+                <p className="mt-3 text-4xl font-bold text-[#000000]">
+                  {result.category}
+                </p>
+              </div>
 
-              {goal === "none" ? (
-                <div className="mt-5 rounded-2xl bg-[#F0E0C7] px-5 py-4 text-sm leading-7 text-[#8A7464]">
-                  Analisis dasar aktif. Tidak ada program tambahan.
+              {submitted && submitted.goal !== "none" && (
+                <div className={softLightCard}>
+                  <p className="text-sm font-medium text-[#646464]">Kalori Harian</p>
+                  <p className="mt-3 text-4xl font-bold text-[#000000]">
+                    {result.calories}
+                  </p>
                 </div>
-              ) : (
-                <div className="mt-5 flex flex-col gap-4 rounded-2xl bg-[#F0E0C7] p-5 sm:flex-row sm:items-center sm:justify-between">
+              )}
+            </div>
+
+            <div className={softLightCard}>
+              <p className="text-sm font-medium text-[#646464]">Rentang Berat Ideal</p>
+              <p className="mt-3 text-4xl font-bold text-[#000000]">
+                {result.min} - {result.max} kg
+              </p>
+            </div>
+
+            {showProgramCard && submitted && (
+              <div className={softLightCard}>
+                <p className="text-xs uppercase tracking-[0.22em] text-[#E85002]">
+                  PROGRAM {submitted.goal.toUpperCase()}
+                </p>
+
+                <h3 className="mt-4 text-2xl font-bold text-[#000000]">
+                  Lanjut ke program
+                </h3>
+
+                <div className="mt-5 flex flex-col gap-4 rounded-[24px] border border-[#A7A7A7]/20 bg-white p-5 md:flex-row md:items-center md:justify-between">
                   <div>
-                    <p className="text-base font-semibold text-[#2C0901]">
-                      {goal === "diet" ? "Buka halaman diet" : "Buka halaman bulking"}
+                    <p className="text-lg font-semibold text-[#000000]">
+                      Buka halaman {submitted.goal}
                     </p>
-                    <p className="mt-1 text-sm text-[#8A7464]">
+                    <p className="mt-1 text-sm leading-6 text-[#646464]">
                       Lihat panduan singkat yang sesuai dengan tujuanmu.
                     </p>
                   </div>
 
-                  <button
-  type="button"
-  onClick={goToProgramPage}
-  className="glow-button glow-dark inline-flex whitespace-nowrap items-center justify-center rounded-2xl bg-[#4E1E15] px-5 py-3 text-sm font-bold text-[#FFF4E8] hover:bg-[#5f271b]"
->
-  View Program
-</button>
+                  <a
+                    href={`/program/${submitted.goal}?heightCm=${submitted.heightCm}&weightKg=${submitted.weightKg}&age=${submitted.age}&gender=${submitted.gender}&activityLevel=${submitted.activityLevel}&goal=${submitted.goal}`}
+                    className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#000000] via-[#C10801] to-[#F16001] px-6 py-3 font-semibold text-white shadow-[0_16px_35px_rgba(232,80,2,0.18)] transition hover:scale-[1.01]"
+                  >
+                    View Program
+                  </a>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </>
         )}
       </div>
     </section>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div>
-      <label className="mb-2 block text-sm text-[#8A7464]">{label}</label>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-2xl border border-[#DCCBB8] bg-[#F0E0C7] px-5 py-4 text-lg text-[#2C0901] outline-none transition focus:border-[#4E1E15] focus:shadow-[0_0_0_4px_rgba(180,142,105,0.14)]"
-      />
-    </div>
-  );
-}
-
-function SelectField({
-  label,
-  value,
-  onChange,
-  options,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ label: string; value: string }>;
-}) {
-  return (
-    <div>
-      <label className="mb-2 block text-sm text-[#8A7464]">{label}</label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-2xl border border-[#DCCBB8] bg-[#F0E0C7] px-5 py-4 text-lg text-[#2C0901] outline-none transition focus:border-[#4E1E15] focus:shadow-[0_0_0_4px_rgba(180,142,105,0.14)]"
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
-function ResultCard({
-  label,
-  value,
-  accent = false,
-  className = "",
-}: {
-  label: string;
-  value: string;
-  accent?: boolean;
-  className?: string;
-}) {
-  return (
-    <div className={`soft-card rounded-[24px] border border-[#DCCBB8] bg-[#FFF4E8] p-6 ${className}`}>
-      <p className="text-sm text-[#8A7464]">{label}</p>
-      <p className={`mt-3 text-3xl font-extrabold leading-tight md:text-4xl ${accent ? "text-[#4E1E15]" : "text-[#2C0901]"}`}>
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function SkeletonCard() {
-  return (
-    <div className="rounded-[24px] bg-[#F0E0C7] p-5">
-      <div className="h-4 w-24 animate-pulse rounded bg-[#dccbb8]" />
-      <div className="mt-4 h-10 w-36 animate-pulse rounded bg-[#dccbb8]" />
-    </div>
   );
 }
